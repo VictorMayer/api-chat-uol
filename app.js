@@ -1,5 +1,6 @@
 import express from "express";
 import chalk from "chalk";
+import dayjs from "days";
 import cors from "cors";
 import fs from "fs";
 
@@ -21,7 +22,26 @@ function saveData() {
 }
 
 app.post("/participants", (req, res) => {
-    //blaablabla
+    const name = req.body.name.trim();
+    const beingUsed = participants.find(participant => participant.name === name);
+    if(name.length === 0) return res.status(400).send({error:"Nome não pode ser vazio!"});
+    if(beingUsed) return res.status(400).send({error:"O nome já está sendo utilizado!"});
+    const newParticipant = {
+        name,
+        lastStatus: Date.now()
+    }
+    const time = dayjs().format('HH:mm:ss');
+    const welcomeMessage = {
+        from: name,
+        to: "Todos",
+        text: "entra na sala...",
+        type: "status",
+        time: time
+    }
+    participants.push(newParticipant);
+    messages.push(welcomeMessage);
+    saveData();
+    res.sendStatus(200);
 });
 
 app.get("/participants", (req, res) => {
