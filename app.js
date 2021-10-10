@@ -49,7 +49,16 @@ app.get("/participants", (req, res) => {
 });
 
 app.post("/messages", (req, res) => {
-    //blablabla
+    const {to, text, type} = req.body;
+    const from = req.headers.user;
+    const time = dayjs().format("HH:mm:ss");
+
+    if(to.length === 0 || text.trim().length === 0) return res.sendStatus(400);
+    if(type !== "message" && type !== "private_message") return res.sendStatus(400); 
+    if(!participants.find(participant => participant.name === from)) return res.sendStatus(400);
+
+    const newMessage = { from, to, text, type, time }
+    res.sendStatus(200);
 });
 
 app.get("/messages", (req, res) => {
