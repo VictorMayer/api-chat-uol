@@ -73,7 +73,11 @@ app.get("/messages", (req, res) => {
 });
 
 app.post("/status", (req, res) => {
-    //blablabla
+    const { user } = req.headers;
+    if(!participants.find(participant => participant.name === user)) return res.sendStatus(400);
+    const selectedUser = participants.filter(participant => participant.name === user);
+    selectedUser.lastStatus = Date.now();
+    res.sendStatus(200);
 });
 
 app.listen(port, () => {
