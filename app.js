@@ -21,6 +21,17 @@ function saveData() {
     fs.writeFileSync(".database.json", JSON.stringify(content));
 }
 
+const removeAFK = setInterval(()=> {
+    participants.forEach((participant) => {
+        if(Date.now() - participant.lastStatus > 10000) {
+            const logoutMsg = {from: participant.name, to: "Todos", text: "sai da sala...", type: "status", time: dayjs().format("HH:mm:ss")}
+            messages.push(logoutMsg);
+            participants.filter(toRemove => participant.name === toRemove.name);
+            saveData();
+        }
+    })
+}, 15000);
+
 app.post("/participants", (req, res) => {
     const name = req.body.name.trim();
     const beingUsed = participants.find(participant => participant.name === name);
