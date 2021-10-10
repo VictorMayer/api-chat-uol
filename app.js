@@ -58,11 +58,18 @@ app.post("/messages", (req, res) => {
     if(!participants.find(participant => participant.name === from)) return res.sendStatus(400);
 
     const newMessage = { from, to, text, type, time }
+    messages.push(newMessage);
+    saveData();
     res.sendStatus(200);
 });
 
 app.get("/messages", (req, res) => {
-    //blablabla
+    const { user } = req.headers;
+    const { limit } = req.query;
+    const reversedArray = messages.reverse();
+    const messageList = reversedArray.filter(msg => (msg.type === "message" || (msg.type === "private_message" && (msg.to === user || msg.from === user))))
+    const filteredMessageList = limit ? messageList.filter((msg)=>msg.id>limit) : messageList ;
+    res.send(filteredMessageList);
 });
 
 app.post("/status", (req, res) => {
