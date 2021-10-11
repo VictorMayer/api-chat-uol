@@ -2,6 +2,7 @@ import express from "express";
 import chalk from "chalk";
 import dayjs from "dayjs";
 import cors from "cors";
+import joi from "joi";
 import fs from "fs";
 
 const port = 4000;
@@ -12,6 +13,10 @@ app.use(cors());
 const database = fs.readFileSync('./database.json');
 const messages = JSON.parse(database.toString()).messages;
 let participants = JSON.parse(database.toString()).participants;
+
+const participantSchema = joi.object({
+    name: joi.string().alphanum().min(1).max(35).required()
+});
 
 function saveData() {
     const content = {
@@ -37,8 +42,8 @@ app.post("/participants", (req, res) => {
     const name = req.body.name.trim();
     const beingUsed = participants?.find(participant => participant.name === name);
     const time = dayjs().format('HH:mm:ss');
-    
-    if(name.length === 0) return res.status(400).send({error:"Nome não pode ser vazio!"});
+    const valid = participantSchema.validate({name})
+    if(!valid.error === undefined) return res.status(400).send({error:"Nome inválido!"});
     if(beingUsed) return res.status(400).send({error:"O nome já está sendo utilizado!"});
     
     const newParticipant = {
