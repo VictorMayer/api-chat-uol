@@ -11,9 +11,7 @@ app.use(cors());
 
 const database = fs.readFileSync('./database.json');
 const messages = JSON.parse(database.toString()).messages;
-const participants = JSON.parse(database.toString()).participants;
-console.log(messages);
-console.log(participants);
+let participants = JSON.parse(database.toString()).participants;
 
 function saveData() {
     const content = {
@@ -23,18 +21,17 @@ function saveData() {
     fs.writeFileSync("./database.json", JSON.stringify(content));
 }
 
-/* 
 const removeAFK = setInterval(()=> {
+    console.log("repetindo interval")
     participants.forEach((participant) => {
         if(Date.now() - participant.lastStatus > 10000) {
             const logoutMsg = {from: participant.name, to: "Todos", text: "sai da sala...", type: "status", time: dayjs().format("HH:mm:ss")}
             messages.push(logoutMsg);
-            participants.filter(toRemove => participant.name === toRemove.name);
-            saveData();
         }
     })
+    participants = participants.filter((participant) => (Date.now() - participant.lastStatus <= 10000 ));
+    saveData();
 }, 15000);
-*/
 
 app.post("/participants", (req, res) => {
     const name = req.body.name.trim();
@@ -84,25 +81,24 @@ app.post("/messages", (req, res) => {
 app.get("/messages", (req, res) => {
     const { user } = req.headers;
     const { limit } = req.query;
-    const reversedArray = messages.reverse();
-    const messageList = reversedArray.filter(msg => (msg.type === "status" ||msg.type === "message" || (msg.type === "private_message" && (msg.to === user || msg.from === user))))
-    
-    const limitedList = [];
-    if(limit){
-        for(let i=0; i<limit ; i++){
-            limitedList.push(messageList[i]);
-        }
+    const messageList = messages.filter((msg) => (msg.type === "status" || msg.type === "message" || (msg.type === "private_message" && (msg.to === user || msg.from === user))))
+    const filteredMessageList = limit ? [] : messageList;
+    for(let i=0 ; i<Number(limit); i++){
+        if(i >= messageList.length) break; 
+        filteredMessageList.push(messageList[i]);
     }
-    
-    const filteredMessageList = limit ? limitedList : messageList ;
     res.send(filteredMessageList);
 });
 
 app.post("/status", (req, res) => {
     const { user } = req.headers;
     if(!participants.find(participant => participant.name === user)) return res.sendStatus(400);
-    const selectedUser = participants.filter(participant => participant.name === user);
-    selectedUser.lastStatus = Date.now();
+    for(let i=0; i<participants.length; i++){
+        if(participants[i].name === user){
+            participants[i].lastStatus = Date.now();
+        }
+    }
+    saveData();
     res.sendStatus(200);
 });
 
