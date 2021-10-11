@@ -1,6 +1,6 @@
 import express from "express";
 import chalk from "chalk";
-import dayjs from "days";
+import dayjs from "dayjs";
 import cors from "cors";
 import fs from "fs";
 
@@ -9,18 +9,21 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const database = fs.readFileSync("./database.json");
+const database = fs.readFileSync('./database.json');
 const messages = JSON.parse(database.toString()).messages;
-const participants = JSON.parse(database.toString()).comments;
+const participants = JSON.parse(database.toString()).participants;
+console.log(messages);
+console.log(participants);
 
 function saveData() {
     const content = {
         participants,
         messages
     }
-    fs.writeFileSync(".database.json", JSON.stringify(content));
+    fs.writeFileSync("./database.json", JSON.stringify(content));
 }
 
+/* 
 const removeAFK = setInterval(()=> {
     participants.forEach((participant) => {
         if(Date.now() - participant.lastStatus > 10000) {
@@ -31,17 +34,20 @@ const removeAFK = setInterval(()=> {
         }
     })
 }, 15000);
+*/
 
 app.post("/participants", (req, res) => {
     const name = req.body.name.trim();
-    const beingUsed = participants.find(participant => participant.name === name);
+    const beingUsed = participants?.find(participant => participant.name === name);
+    const time = dayjs().format('HH:mm:ss');
+    
     if(name.length === 0) return res.status(400).send({error:"Nome não pode ser vazio!"});
     if(beingUsed) return res.status(400).send({error:"O nome já está sendo utilizado!"});
+    
     const newParticipant = {
         name,
         lastStatus: Date.now()
     }
-    const time = dayjs().format('HH:mm:ss');
     const welcomeMessage = {
         from: name,
         to: "Todos",
@@ -49,6 +55,7 @@ app.post("/participants", (req, res) => {
         type: "status",
         time: time
     }
+    
     participants.push(newParticipant);
     messages.push(welcomeMessage);
     saveData();
@@ -78,8 +85,16 @@ app.get("/messages", (req, res) => {
     const { user } = req.headers;
     const { limit } = req.query;
     const reversedArray = messages.reverse();
-    const messageList = reversedArray.filter(msg => (msg.type === "message" || (msg.type === "private_message" && (msg.to === user || msg.from === user))))
-    const filteredMessageList = limit ? messageList.filter((msg)=>msg.id>limit) : messageList ;
+    const messageList = reversedArray.filter(msg => (msg.type === "status" ||msg.type === "message" || (msg.type === "private_message" && (msg.to === user || msg.from === user))))
+    
+    const limitedList = [];
+    if(limit){
+        for(let i=0; i<limit ; i++){
+            limitedList.push(messageList[i]);
+        }
+    }
+    
+    const filteredMessageList = limit ? limitedList : messageList ;
     res.send(filteredMessageList);
 });
 
