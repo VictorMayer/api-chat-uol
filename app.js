@@ -2,7 +2,7 @@ import express from "express";
 import chalk from "chalk";
 import dayjs from "dayjs";
 import cors from "cors";
-import joi from "joi";
+import joi, { required } from "joi";
 import fs from "fs";
 
 const port = 4000;
@@ -15,8 +15,13 @@ const messages = JSON.parse(database.toString()).messages;
 let participants = JSON.parse(database.toString()).participants;
 
 const participantSchema = joi.object({
-    name: joi.string().alphanum().min(1).max(35).required()
+    name: joi.string().alphanum().min(1).max(40).required()
 });
+const messageSchema = joi.object({
+    to: joi.string().alphanum().min(1).max(40).required(),
+    text: joi.string().min(1).required()
+})
+
 
 function saveData() {
     const content = {
@@ -72,8 +77,8 @@ app.post("/messages", (req, res) => {
     const {to, text, type} = req.body;
     const from = req.headers.user;
     const time = dayjs().format("HH:mm:ss");
-
-    if(to.length === 0 || text.trim().length === 0) return res.sendStatus(400);
+    const valid = messageSchema.validate({ to, text: text.trim() });
+    if(valid.error !== undefined) return res.sendStatus(400);
     if(type !== "message" && type !== "private_message") return res.sendStatus(400); 
     if(!participants.find(participant => participant.name === from)) return res.sendStatus(400);
 
