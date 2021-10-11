@@ -43,7 +43,7 @@ app.post("/participants", (req, res) => {
     const beingUsed = participants?.find(participant => participant.name === name);
     const time = dayjs().format('HH:mm:ss');
     const valid = participantSchema.validate({name})
-    if(!valid.error === undefined) return res.status(400).send({error:"Nome inválido!"});
+    if(valid.error !== undefined) return res.status(400).send({error:"Nome inválido!"});
     if(beingUsed) return res.status(400).send({error:"O nome já está sendo utilizado!"});
     
     const newParticipant = {
